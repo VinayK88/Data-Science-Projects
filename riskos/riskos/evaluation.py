@@ -80,14 +80,24 @@ def threshold_sweep(cases: list[SyntheticCase], review_capacity: int = 60) -> li
     return [evaluate_threshold(cases, t, review_capacity=review_capacity) for t in thresholds]
 
 
-def best_threshold(cases: list[SyntheticCase], review_capacity: int = 60) -> ThresholdResult:
-    return min(threshold_sweep(cases, review_capacity), key=lambda row: row.total_cost)
+def best_threshold(
+    cases: list[SyntheticCase],
+    review_capacity: int = 60,
+    hard_capacity: bool = True,
+) -> ThresholdResult:
+    """Select the minimum-cost threshold, optionally requiring queue feasibility."""
+    rows = threshold_sweep(cases, review_capacity)
+    if hard_capacity:
+        feasible = [row for row in rows if row.review_count <= review_capacity]
+        if feasible:
+            rows = feasible
+    return min(rows, key=lambda row: row.total_cost)
 
 
 def main() -> None:
     cases = generate_cases()
     rows = threshold_sweep(cases)
-    best = min(rows, key=lambda row: row.total_cost)
+    best = best_threshold(cases)
 
     print("RiskOS threshold optimization")
     print("threshold precision recall   f1 reviews total_cost")
@@ -97,7 +107,10 @@ def main() -> None:
             f"{row.threshold:8.2f} {row.precision:9.2%} {row.recall:6.2%} "
             f"{row.f1:5.2%} {row.review_count:7d} ${row.total_cost:10,.0f}{marker}"
         )
-    print(f"\nSelected threshold={best.threshold:.2f} based on minimum expected operating cost.")
+    print(
+        f"\nSelected threshold={best.threshold:.2f}: minimum expected operating cost "
+        "among thresholds that fit analyst review capacity."
+    )
 
 
 if __name__ == "__main__":
