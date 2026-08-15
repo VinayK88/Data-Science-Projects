@@ -8,7 +8,7 @@ import pandas as pd
 import streamlit as st
 
 from riskos.core import decision, expected_loss, reasons, risk_score
-from riskos.evaluation import threshold_sweep
+from riskos.evaluation import best_threshold, threshold_sweep
 from riskos.monitoring import drift_summary
 from riskos.simulator import generate_cases
 
@@ -19,11 +19,11 @@ st.caption("Synthetic marketplace risk, review-capacity optimization, and drift 
 
 sample_size = st.sidebar.slider("Synthetic entities", 200, 1500, 600, step=100)
 fraud_rate = st.sidebar.slider("Fraud prevalence", 0.05, 0.30, 0.14, step=0.01)
-review_capacity = st.sidebar.slider("Analyst review capacity", 20, 250, 90, step=10)
+review_capacity = st.sidebar.slider("Analyst review capacity", 20, 250, 60, step=10)
 
 cases = generate_cases(n=sample_size, fraud_rate=fraud_rate, seed=17)
 rows = threshold_sweep(cases, review_capacity=review_capacity)
-best = min(rows, key=lambda row: row.total_cost)
+best = best_threshold(cases, review_capacity=review_capacity)
 
 scored = []
 for case in cases:
@@ -87,8 +87,8 @@ with tab2:
     st.line_chart(sweep_df.set_index("threshold")[["total_cost"]])
     st.dataframe(sweep_df, use_container_width=True, hide_index=True)
     st.info(
-        f"Minimum-cost threshold: {best.threshold:.2f}. This objective includes missed fraud loss, "
-        "false-positive cost, review cost, and a penalty when review volume exceeds analyst capacity."
+        f"Recommended threshold: {best.threshold:.2f}. RiskOS minimizes expected operating cost "
+        "among thresholds whose review volume fits current analyst capacity."
     )
 
 with tab3:
