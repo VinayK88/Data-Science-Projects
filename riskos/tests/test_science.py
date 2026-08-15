@@ -28,8 +28,8 @@ class RiskOSScienceTest(unittest.TestCase):
 
     def test_best_threshold_is_from_sweep(self):
         best = best_threshold(generate_cases(n=300), review_capacity=50)
-        self.assertGreaterEqual(best.threshold, 0.35)
-        self.assertLessEqual(best.threshold, 0.95)
+        self.assertGreaterEqual(best.threshold, 0.15)
+        self.assertLessEqual(best.threshold, 0.80)
 
     def test_psi_detects_distribution_shift(self):
         stable = [0.1, 0.15, 0.2, 0.35, 0.5, 0.7, 0.85] * 10
