@@ -23,11 +23,18 @@ class ThresholdResult:
 def evaluate_threshold(
     cases: list[SyntheticCase],
     threshold: float,
-    review_capacity: int = 90,
-    false_positive_unit_cost: float = 45.0,
-    analyst_review_unit_cost: float = 8.0,
-    overflow_unit_cost: float = 20.0,
+    review_capacity: int = 60,
+    loss_given_fraud: float = 0.25,
+    false_positive_unit_cost: float = 400.0,
+    analyst_review_unit_cost: float = 15.0,
+    overflow_unit_cost: float = 250.0,
 ) -> ThresholdResult:
+    """Evaluate one review threshold using model and operating metrics.
+
+    `loss_given_fraud` converts gross exposure into an illustrative expected
+    realized loss. The cost constants are scenario assumptions, not claims
+    about any company's economics.
+    """
     tp = fp = fn = 0
     missed_loss = 0.0
     review_count = 0
@@ -43,7 +50,7 @@ def evaluate_threshold(
                 fp += 1
         elif case.is_fraud:
             fn += 1
-            missed_loss += case.features.exposure_usd
+            missed_loss += case.features.exposure_usd * loss_given_fraud
 
     precision = tp / (tp + fp) if tp + fp else 0.0
     recall = tp / (tp + fn) if tp + fn else 0.0
@@ -68,12 +75,12 @@ def evaluate_threshold(
     )
 
 
-def threshold_sweep(cases: list[SyntheticCase], review_capacity: int = 90) -> list[ThresholdResult]:
-    thresholds = [round(x / 100, 2) for x in range(35, 96, 5)]
+def threshold_sweep(cases: list[SyntheticCase], review_capacity: int = 60) -> list[ThresholdResult]:
+    thresholds = [round(x / 100, 2) for x in range(15, 81, 5)]
     return [evaluate_threshold(cases, t, review_capacity=review_capacity) for t in thresholds]
 
 
-def best_threshold(cases: list[SyntheticCase], review_capacity: int = 90) -> ThresholdResult:
+def best_threshold(cases: list[SyntheticCase], review_capacity: int = 60) -> ThresholdResult:
     return min(threshold_sweep(cases, review_capacity), key=lambda row: row.total_cost)
 
 
